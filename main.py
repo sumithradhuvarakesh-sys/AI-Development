@@ -1,7 +1,10 @@
-from planner import create_plan
+from planner import create_plan, observe_page
 from tools import search_web, fetch_page
 from logger import log_step
+
 MAX_ITERATIONS = 5
+
+
 def run_agent(user_input):
 
     print("User:", user_input)
@@ -67,6 +70,20 @@ def run_agent(user_input):
                 query = user_input
                 continue
 
+            # Check search results
+            if len(result["results"]) == 0:
+
+                print("No search results found.")
+
+                log_step(
+                    iteration,
+                    "Recovery",
+                    "No search results"
+                )
+
+                query = search_query + " reliable source"
+                continue
+
             # Fetch top result
             top_result = result["results"][0]
 
@@ -82,6 +99,7 @@ def run_agent(user_input):
                 str(page)
             )
 
+            # FETCH FAILURE RECOVERY
             if not page["success"]:
 
                 print("Page fetch failed. Refining search.")
@@ -97,23 +115,67 @@ def run_agent(user_input):
 
             # OBSERVE
             print("\nObserve:")
-            print("Page successfully fetched.")
+
+            observation = observe_page(
+                query,
+                page["content"]
+            )
+
+            print("Observation:", observation)
 
             log_step(
                 iteration,
                 "Observe",
-                str(page)
+                observation
             )
 
-            print("\nResearch completed successfully.")
+            # INFORMATION IS SUFFICIENT
+            if observation.startswith("SUFFICIENT"):
 
-            log_step(
-                iteration,
-                "Success",
-                "Valid search result and page received"
-            )
+                print("\nResearch completed successfully.")
 
-            return
+                log_step(
+                    iteration,
+                    "Success",
+                    "Information is sufficient"
+                )
+
+                return
+
+            # INFORMATION IS NOT SUFFICIENT
+            elif observation.startswith("REFINE:"):
+
+                new_query = observation.replace(
+                    "REFINE:",
+                    ""
+                ).strip()
+
+                print("\nRefining search:")
+                print(new_query)
+
+                log_step(
+                    iteration,
+                    "Refine",
+                    new_query
+                )
+
+                query = new_query
+                continue
+
+            # INVALID OBSERVATION
+            else:
+
+                print("\nInvalid observation.")
+
+                log_step(
+                    iteration,
+                    "Recovery",
+                    "Invalid observation"
+                )
+
+                query = search_query + " reliable information"
+                continue
+
         else:
 
             print("\nObserve:")
@@ -124,14 +186,19 @@ def run_agent(user_input):
                 "Observe",
                 "Invalid planner action"
             )
+
             query = user_input + " reliable information"
 
+
     print("\nMaximum iterations reached.")
+
     log_step(
         MAX_ITERATIONS,
         "Stop",
         "Maximum iteration limit reached"
     )
+
+
 user_input = input("Enter your research question: ")
 
 run_agent(user_input)
