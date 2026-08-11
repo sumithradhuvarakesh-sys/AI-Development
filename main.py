@@ -1,4 +1,4 @@
-from planner import create_plan, observe_page
+from planner import create_plan, observe_page, generate_final_answer
 from tools import search_web, fetch_page
 from logger import log_step
 
@@ -70,7 +70,7 @@ def run_agent(user_input):
                 query = user_input
                 continue
 
-            # Check search results
+            # CHECK SEARCH RESULTS
             if len(result["results"]) == 0:
 
                 print("No search results found.")
@@ -84,7 +84,7 @@ def run_agent(user_input):
                 query = search_query + " reliable source"
                 continue
 
-            # Fetch top result
+            # FETCH TOP RESULT
             top_result = result["results"][0]
 
             url = top_result["url"]
@@ -132,12 +132,28 @@ def run_agent(user_input):
             # INFORMATION IS SUFFICIENT
             if observation.startswith("SUFFICIENT"):
 
+                # GENERATE FINAL ANSWER
+                final_answer = generate_final_answer(
+                    query,
+                    page["content"],
+                    url
+                )
+
+                print("\nFinal Answer:")
+                print(final_answer)
+
+                log_step(
+                    iteration,
+                    "Final Answer",
+                    final_answer
+                )
+
                 print("\nResearch completed successfully.")
 
                 log_step(
                     iteration,
                     "Success",
-                    "Information is sufficient"
+                    "Final answer generated successfully"
                 )
 
                 return
@@ -188,7 +204,6 @@ def run_agent(user_input):
             )
 
             query = user_input + " reliable information"
-
 
     print("\nMaximum iterations reached.")
 

@@ -76,3 +76,38 @@ REFINE: <new search query>
     )
 
     return response.text.strip()
+
+
+def generate_final_answer(user_query, research_content, source_url):
+
+    prompt = f"""
+You are an AI web research assistant.
+
+User research question:
+{user_query}
+
+Research content:
+{research_content}
+
+Source URL:
+{source_url}
+
+Using the research content, provide a clear and useful
+answer to the user's question.
+
+Do not mention internal agent steps.
+Do not say "SUFFICIENT" or "REFINE".
+
+At the end of the answer, include the source in this exact format:
+
+Source:
+{source_url}
+
+Do not omit the source URL.
+Give only the final answer and source.
+"""
+    response = client.models.generate_content(
+        model="gemini-3.5-flash-lite",
+        contents=prompt
+    )
+    return response.text.strip()
